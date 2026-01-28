@@ -158,16 +158,12 @@ router.post('/google', async (req, res) => {
                 email,
                 googleId: sub,
                 profilePicture: picture,
-                role: email === 'abhishekpyakurel01@gmail.com' ? 'admin' : 'user'
+                role: 'user' // Default role
             });
         } else {
             // Update googleId and picture if missing
             user.googleId = sub;
             if (picture) user.profilePicture = picture;
-            // Force admin role for this specific email
-            if (email === 'abhishekpyakurel01@gmail.com') {
-                user.role = 'admin';
-            }
             await user.save();
         }
 
