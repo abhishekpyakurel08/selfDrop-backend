@@ -68,6 +68,13 @@ const createLimiter = (windowMs, max, message) => rateLimit({
 });
 
 // 1. Global API Limiter (Standard Browsing)
+app.get('/api/keep-alive', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is awake',
+    time: new Date().toISOString()
+  });
+});
 const globalLimiter = createLimiter(15 * 60 * 1000, 300, 'System busy. Please try again in 15 minutes.');
 app.use('/api/', globalLimiter);
 
