@@ -139,7 +139,7 @@ router.post('/google', async (req, res) => {
         const client = new OAuth2Client(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET,
-            'postmessage'
+            process.env.GOOGLE_CALLBACK_URL || 'postmessage'
         );
 
         const { tokens } = await client.getToken(code);
