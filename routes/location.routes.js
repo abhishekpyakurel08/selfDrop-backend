@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const fetch = require('node-fetch');
 const { auth } = require('../middleware/auth');
+const Area = require('../models/Area');
 
 // Reverse Geocode: lat,lng -> address
 router.get('/reverse', auth(['user', 'vendor', 'admin']), async (req, res) => {
@@ -20,7 +21,7 @@ router.get('/reverse', auth(['user', 'vendor', 'admin']), async (req, res) => {
 });
 
 // Calculate Distance & Time
-router.get('/calculate', auth(['user', 'vendor', 'admin']), (req, res) => {
+router.get('/calculate', auth(['user', 'admin']), (req, res) => {
     const { originLat, originLng, destLat, destLng } = req.query;
 
     if (!originLat || !originLng || !destLat || !destLng) {
@@ -92,6 +93,16 @@ router.get('/search', async (req, res) => {
         res.json(suggestions);
     } catch (err) {
         res.status(500).json({ message: 'Failed to search location', error: err.message });
+    }
+});
+
+// GET serviceable areas
+router.get('/areas', async (req, res) => {
+    try {
+        const areas = await Area.find({ active: true }).sort('displayName');
+        res.json(areas);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch delivery areas', error: err.message });
     }
 });
 

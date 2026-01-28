@@ -4,7 +4,8 @@ const LocationSchema = new mongoose.Schema({
     address: String,
     lat: Number,
     lng: Number,
-    note: String
+    note: String,
+    area: { type: mongoose.Schema.Types.ObjectId, ref: 'Area' }
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({
@@ -31,7 +32,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'CREATED'
     },
     payment: {
-        method: { type: String, enum: ['STRIPE', 'KHALTI', 'ESEWA', 'COD'] }, // Added COD (Cash on Delivery)
+        method: { type: String, enum: ['COD'], default: 'COD' },
         status: { type: String, enum: ['PENDING', 'PAID', 'FAILED'], default: 'PENDING' },
         reference: String
     },

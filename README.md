@@ -14,8 +14,7 @@ Production-ready Node.js backend for Self-Drop E-Commerce platform with **full d
   - Location tracking (Leaflet/OSM compatible)
   - **Admin-only order management**
 - **Payments**: 
-  - Stripe, Khalti, eSewa integration
-  - ✨ **Cash on Delivery (COD)**
+  - ✨ **Cash on Delivery (COD) Only**
   - **Admin confirms COD payments**
 - **Real-time**: Socket.IO for live order/review updates.
 - **Admin Panel API**: Analytics, Moderation, Approvals, Full Control.
@@ -37,9 +36,7 @@ This system is designed for **centralized admin control**:
 - Select payment methods
 - Track their orders
 
-❌ **Vendors:**
-- Vendor role exists in database but has no functional access
-- All vendor operations are admin-controlled
+
 
 ## 🚀 Delivery System
 
@@ -48,16 +45,13 @@ This system is designed for **centralized admin control**:
 - **DELIVERY**: Admin delivers to customer's address
 
 ### Automatic Calculations
-- **Delivery Charge**: 50 NPR base + 20 NPR/km
+- **Delivery Charge**: रु 40 Flat Fee
 - **Distance**: Haversine formula (accurate to 2 decimal places)
 - **Estimated Time**: Based on 25 km/h avg speed + 15 min prep time
-- **Delivery Radius**: Up to 15 km
+- **Delivery Radius**: Up to 15 km (Bhaktapur: 7 km)
 
 ### Payment Options
-- **STRIPE** - Online card payment
-- **KHALTI** - Nepal digital wallet
-- **ESEWA** - Nepal digital wallet
-- **COD** - Cash on Delivery (Admin confirms)
+- **COD** - Cash on Delivery (Standard fulfillment method)
 
 ## Quick Start
 
@@ -123,6 +117,12 @@ POST /api/orders
   "deliveryLocation": { "address": "...", "lat": 27.7154, "lng": 85.3123 }
 }
 
+# Get user orders
+GET /api/orders/my
+
+# Get product details
+GET /api/products/:id
+
 # Select Cash on Delivery
 POST /api/payment/cod/:orderId
 ```
@@ -153,7 +153,7 @@ CREATED → CONFIRMED → OUT_FOR_DELIVERY → DELIVERED → COMPLETED
 - **Runtime**: Node.js + Express
 - **Database**: MongoDB + Mongoose
 - **Authentication**: JWT + Google OAuth
-- **Payments**: Stripe, Khalti, eSewa, COD
+
 - **Image Optimization**: ImageKit
 - **Real-time**: Socket.IO
 - **Email**: Nodemailer

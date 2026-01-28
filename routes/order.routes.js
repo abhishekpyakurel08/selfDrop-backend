@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const { auth } = require('../middleware/auth');
 const mailer = require('../config/mailer');
 const User = require('../models/User');
+const Area = require('../models/Area');
 
 // Place order
 router.post('/', auth(['user']), async (req, res) => {
@@ -26,10 +27,8 @@ router.post('/', auth(['user']), async (req, res) => {
     };
 
     // Helper function to calculate delivery charge
-    const calculateDeliveryCharge = (distance) => {
-        const baseCharge = 50; // Base delivery charge in NPR
-        const perKmCharge = 20; // Charge per km in NPR
-        return baseCharge + (distance * perKmCharge);
+    const calculateDeliveryCharge = () => {
+        return 40; // Flat delivery charge 40 NPR
     };
 
     // Helper function to estimate delivery time
@@ -81,6 +80,17 @@ router.post('/', auth(['user']), async (req, res) => {
 
     const total = subtotal + (subtotal >= 2000 ? 0 : deliveryCharge);
 
+    // 2.5 Check Area specific limit
+    let maxDistance = 15; // default
+    if (deliveryLocation?.area) {
+        const area = await Area.findById(deliveryLocation.area);
+        if (area) maxDistance = area.maxDistanceKm;
+    }
+
+    if (distance > maxDistance) {
+        return res.status(400).json({ message: `Delivery exceeded maximum distance of ${maxDistance}km for this area.` });
+    }
+
     // 3. Create Order
     const order = await Order.create({
         user: req.user.id,
@@ -89,7 +99,6 @@ router.post('/', auth(['user']), async (req, res) => {
         orderType: 'DELIVERY',
         deliveryLocation,
         deliveryCharge: subtotal >= 2000 ? 0 : deliveryCharge,
-        distance: Math.round(distance * 100) / 100,
         estimatedDeliveryTime
     });
 
@@ -119,7 +128,17 @@ router.post('/', auth(['user']), async (req, res) => {
 
 // Get user orders
 router.get('/my', auth(['user']), async (req, res) => {
-    res.json(await Order.find({ user: req.user.id }).populate('items.product').sort('-createdAt'));
+    try {
+        const orders = await Order.find({ user: req.user.id })
+            .populate({
+                path: 'items.product',
+                select: 'name price image'
+            })
+            .sort('-createdAt');
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
 const notificationService = require('../services/notification.service');
@@ -142,7 +161,7 @@ router.put('/:id/status', auth(['admin']), async (req, res) => {
 
 // Calculate delivery estimate
 router.post('/delivery-estimate', auth(['user']), async (req, res) => {
-    const { vendorId, deliveryLocation } = req.body;
+    const { vendorId, deliveryLocation, subtotal = 0 } = req.body;
 
     if (!deliveryLocation?.lat || !deliveryLocation?.lng) {
         return res.status(400).json({ message: "Delivery location with coordinates required" });
@@ -160,10 +179,8 @@ router.post('/delivery-estimate', auth(['user']), async (req, res) => {
         return R * c;
     };
 
-    const calculateDeliveryCharge = (distance) => {
-        const baseCharge = 50;
-        const perKmCharge = 20;
-        return baseCharge + (distance * perKmCharge);
+    const calculateDeliveryCharge = () => {
+        return 40;
     };
 
     const estimateDeliveryTime = (distance) => {
@@ -192,13 +209,19 @@ router.post('/delivery-estimate', auth(['user']), async (req, res) => {
         const finalDeliveryCharge = 0; // We will handle this logic based on subtotal in frontend/checkout
         // Actually, let's just return the potential charge and let frontend decide based on cart
 
+        let maxDistance = 15;
+        if (deliveryLocation?.area) {
+            const area = await Area.findById(deliveryLocation.area);
+            if (area) maxDistance = area.maxDistanceKm;
+        }
+
         res.json({
             vendorId,
             vendorName: vendor.shopName || vendor.name,
-            distance: Math.round(distance * 100) / 100,
-            deliveryCharge: Math.round(calculateDeliveryCharge(distance)), // Re-added calculation for deliveryCharge
+            deliveryCharge: subtotal >= 2000 ? 0 : Math.round(calculateDeliveryCharge()),
             estimatedDeliveryTime: estimatedTime,
-            canDeliver: distance <= 15
+            canDeliver: distance <= maxDistance,
+            maxDistance
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

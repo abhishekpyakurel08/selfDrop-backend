@@ -38,7 +38,7 @@ The system has been permanently converted from a multi-vendor marketplace to an 
 The delivery system now operates from a centralized model:
 - **Pickup Points:** Managed by Admin.
 - **Delivery Calculation:** Calculated based on the distance between the **Admin Hub** and the customer.
-- **Delivery Charge:** 50 NPR base + 20 NPR/km.
+- **Delivery Charge:** रु 40 Flat Fee.
 
 ---
 
