@@ -10,12 +10,38 @@ router.get('/reverse', auth(['user', 'vendor', 'admin']), async (req, res) => {
     if (!lat || !lng) return res.status(400).json({ message: 'lat and lng required' });
 
     try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-        const response = await fetch(url, { headers: { 'User-Agent': 'SpiritLiquor/1.0' } });
-        const data = await response.json();
+        let address = '';
+        if (process.env.GOOGLE_API_KEY) {
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.GOOGLE_API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.status === 'OK' && data.results.length > 0) {
+                address = data.results[0].formatted_address;
+            } else {
+                throw new Error(data.error_message || 'Google Maps API error');
+            }
+        } else {
+            // Fallback to OSM
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+            const response = await fetch(url, { headers: { 'User-Agent': 'SpiritLiquor/1.0' } });
+            const data = await response.json();
+            address = data.display_name;
+        }
 
-        res.json({ address: data.display_name });
+        res.json({ address });
     } catch (err) {
+        console.error('Reverse geocode error:', err.message);
+        // Try fallback if Google failed
+        if (process.env.GOOGLE_API_KEY) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+                const response = await fetch(url, { headers: { 'User-Agent': 'SpiritLiquor/1.0' } });
+                const data = await response.json();
+                return res.json({ address: data.display_name });
+            } catch (fallbackErr) {
+                return res.status(500).json({ message: 'Failed to fetch address', error: fallbackErr.message });
+            }
+        }
         res.status(500).json({ message: 'Failed to fetch address', error: err.message });
     }
 });
@@ -80,15 +106,34 @@ router.get('/search', async (req, res) => {
     if (!q) return res.status(400).json({ message: 'Query string required' });
 
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&countrycodes=np&limit=5`;
-        const response = await fetch(url, { headers: { 'User-Agent': 'SpiritLiquor/1.0' } });
-        const data = await response.json();
+        let suggestions = [];
 
-        const suggestions = data.map(item => ({
-            display_name: item.display_name,
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon)
-        }));
+        if (process.env.GOOGLE_API_KEY) {
+            const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&key=${process.env.GOOGLE_API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.status === 'OK') {
+                suggestions = data.results.map(item => ({
+                    display_name: item.formatted_address,
+                    lat: item.geometry.location.lat,
+                    lng: item.geometry.location.lng
+                }));
+            }
+        }
+
+        if (suggestions.length === 0) {
+            // Fallback to OSM
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&countrycodes=np&limit=5`;
+            const response = await fetch(url, { headers: { 'User-Agent': 'SpiritLiquor/1.0' } });
+            const data = await response.json();
+
+            suggestions = data.map(item => ({
+                display_name: item.display_name,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon)
+            }));
+        }
 
         res.json(suggestions);
     } catch (err) {
