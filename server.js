@@ -92,8 +92,10 @@ app.use('/api/upload', uploadLimiter);
 app.set('trust proxy', 1); // Respect X-Forwarded-For headers in production
 
 app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
+  origin: "https://daru-hunting.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json({ limit: '10kb' })); // Body limit for security
 app.use(cookieParser());
