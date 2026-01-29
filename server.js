@@ -92,7 +92,7 @@ app.use('/api/upload', uploadLimiter);
 app.set('trust proxy', 1); // Respect X-Forwarded-For headers in production
 
 app.use(cors({
-  origin: "https://daru-hunting.vercel.app",
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
