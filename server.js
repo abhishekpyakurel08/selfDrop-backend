@@ -34,8 +34,9 @@ const errorHandler = require('./middleware/error.middleware');
 
 app.use(logger);
 
-const allowedOrigins = [,
-    process.env.FRONTEND_URL
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'https://web-hunting-web.tecobit.cloud'
 ].filter(Boolean);
 
 const io = new Server(server, {
@@ -109,9 +110,6 @@ notificationService.init(io);
 initLocationSuggestionJob();
 
 // Route Mounting
-app.use('/', (req, res) => {
-    res.send('Hello World!')
-});
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/reviews', reviewRoutes);
@@ -124,6 +122,14 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/location', locationRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Welcome to SelfDrop API',
+        status: 'online',
+        docs: '/docs'
+    });
+});
 // 404 Handler
 app.use((req, res, next) => {
     res.status(404).json({

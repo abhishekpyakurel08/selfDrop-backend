@@ -226,9 +226,12 @@ router.post('/delivery-estimate', auth(['user']), async (req, res) => {
     };
 
     try {
-        const vendor = await User.findById(vendorId);
+        const vendor = vendorId
+            ? await User.findById(vendorId)
+            : await User.findOne({ role: 'admin' });
+
         if (!vendor || !vendor.defaultLocation?.lat) {
-            return res.status(404).json({ message: "Vendor location not available" });
+            return res.status(404).json({ message: "Store location not available" });
         }
 
         const distance = calculateDistance(
