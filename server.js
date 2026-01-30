@@ -32,12 +32,27 @@ const server = http.createServer(app);
 const logger = require('./middleware/logger.middleware');
 const errorHandler = require('./middleware/error.middleware');
 
-app.use(logger);
-
 const allowedOrigins = [
     process.env.FRONTEND_URL,
-    'https://web-hunting-web.tecobit.cloud'
+    'https://web-hunting-web.tecobit.cloud',
+    'https://web-hunting.tecobit.cloud'
 ].filter(Boolean);
+
+// CORS must be pre-loaded before all other routes/middlewares
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+}));
+
+app.use(logger);
 
 const io = new Server(server, {
     cors: {
@@ -53,10 +68,14 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Set to false if you have trouble with external scripts/images
+    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: false, // Essential for Google Auth Popups
+    crossOriginEmbedderPolicy: false
 }));
 app.use(mongoSanitize());
 app.use(compression());
+app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 
 // Rate Limiting Hub
 const createLimiter = (windowMs, max, message) => rateLimit({
@@ -92,15 +111,6 @@ const uploadLimiter = createLimiter(60 * 60 * 1000, 15, 'Upload limit reached. P
 app.use('/api/upload', uploadLimiter);
 
 app.set('trust proxy', 1); // Respect X-Forwarded-For headers in production
-
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
-app.use(express.json({ limit: '10kb' })); // Body limit for security
-app.use(cookieParser());
 
 // Make io accessible in routes and service
 app.set('io', io);

@@ -38,10 +38,12 @@ router.post('/cod/:orderId/confirm', auth(['admin']), async (req, res) => {
         }
 
         order.payment.status = 'PAID';
+        order.status = 'COMPLETED'; // Mark order as finished after cash is received
         await order.save();
 
         // Notify User
         if (order.user && order.user.email) {
+            // Send payment confirmation
             await notificationService.notify({
                 to: order.user.email,
                 userId: order.user._id,
@@ -50,6 +52,9 @@ router.post('/cod/:orderId/confirm', auth(['admin']), async (req, res) => {
                 event: 'payment:cod_confirmed',
                 data: order
             });
+
+            // Also send status update notification
+            await notificationService.notifyOrderUpdate(order.user, order, 'COMPLETED');
         }
 
         res.json({ message: 'COD payment confirmed', order });
