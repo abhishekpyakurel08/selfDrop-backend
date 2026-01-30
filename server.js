@@ -10,6 +10,7 @@ const compression = require('compression');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
+
 // Routes
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/product.routes');
@@ -67,11 +68,11 @@ const createLimiter = (windowMs, max, message) => rateLimit({
 
 // 1. Global API Limiter (Standard Browsing)
 app.get('/api/keep-alive', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    message: 'Server is awake',
-    time: new Date().toISOString()
-  });
+    res.status(200).json({
+        status: 'ok',
+        message: 'Server is awake',
+        time: new Date().toISOString()
+    });
 });
 const globalLimiter = createLimiter(15 * 60 * 1000, 300, 'System busy. Please try again in 15 minutes.');
 app.use('/api/', globalLimiter);
@@ -92,10 +93,10 @@ app.use('/api/upload', uploadLimiter);
 app.set('trust proxy', 1); // Respect X-Forwarded-For headers in production
 
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json({ limit: '10kb' })); // Body limit for security
 app.use(cookieParser());
@@ -108,6 +109,9 @@ notificationService.init(io);
 initLocationSuggestionJob();
 
 // Route Mounting
+app.use('/', (req, res) => {
+    res.send('Hello World!')
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/reviews', reviewRoutes);
